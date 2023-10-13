@@ -625,6 +625,28 @@ def _generate_tool_meta(
     return res
 
 
+def _dynamic_list(function_config: Dict) -> List:
+    import importlib
+    func_path = function_config.get("func_path", type=str)
+    # TODO: extract name and reference values from request kwargs, than construct a dict.
+    func_kwargs = function_config.get("func_kwargs", type=dict)
+    # TODO: validate func path.
+    module_name, func_name = func_path.rsplit('.', 1)
+    module = importlib.import_module(module_name)
+    func = getattr(module, func_name)
+    # parameter
+    # retrieve ws triple, system append to func_kwargs.
+    # system can append ws triple, which is enough for control plane api.
+    # data plane api is not supported because it may require extra info in private link/vnet.
+    # func_kwargs["subscription_id"] = runtime.config.deployment.subscription_id
+    # func_kwargs["resource_group"] = runtime.config.deployment.resource_group
+    # func_kwargs["workspace_name"] = runtime.config.deployment.workspace_name
+    # TODO: error handling of func call.
+    result = func(**func_kwargs)
+    # TODO: validate response is of required format. Throw correct message if response is empty.
+    return result
+
+
 def _generate_package_tools(keys: Optional[List[str]] = None) -> dict:
     import imp
 
