@@ -9,7 +9,7 @@ import logging
 import traceback
 from functools import partial
 from pathlib import Path
-from typing import Callable, List, Mapping, Optional, Tuple, Union
+from typing import Callable, List, Mapping, Optional, Tuple, Union, Dict
 
 import pkg_resources
 import yaml
@@ -167,6 +167,19 @@ def gen_tool_by_source(name, source: ToolSource, tool_type: ToolType, working_di
                 tool_type=tool_type,
                 supported_types=",".join([ToolType.PYTHON, ToolType.PROMPT, ToolType.LLM]),
             )
+
+
+def get_dynamic_list(func_path: str, func_kwargs: Dict):
+    import importlib
+
+    # TODO: validate func path.
+    module_name, func_name = func_path.rsplit('.', 1)
+    module = importlib.import_module(module_name)
+    func = getattr(module, func_name)
+    # TODO: error handling of func call.
+    result = func(**func_kwargs)
+    # TODO: validate response is of required format. Throw correct message if response is empty.
+    return result
 
 
 class BuiltinsManager:
