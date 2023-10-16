@@ -298,7 +298,7 @@ class RunSubmitter:
         # create run to db when fully prepared to run in executor, otherwise won't create it
         run._dump()  # pylint: disable=protected-access
         try:
-            bulk_result = batch_engine.run(
+            input_dicts, bulk_result = batch_engine.run(
                 input_dirs=input_dirs,
                 inputs_mapping=column_mapping,
                 output_dir=Path(".promptflow/output"),
@@ -332,8 +332,8 @@ class RunSubmitter:
             # persist snapshot and result
             # snapshot: flow directory and (mapped) inputs
             local_storage.dump_snapshot(flow)
-            # TODO: dump inputs or not??????
-            # local_storage.dump_inputs(input_dirs)
+            # TODO: dump inputs or not????
+            local_storage.dump_inputs(input_dicts)
             # result: outputs and metrics
             local_storage.persist_result(bulk_result)
             # exceptions
