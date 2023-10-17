@@ -169,7 +169,7 @@ def gen_tool_by_source(name, source: ToolSource, tool_type: ToolType, working_di
             )
 
 
-def get_dynamic_list(func_path: str, func_kwargs: Dict):
+def gen_dynamic_list(func_path: str, func_kwargs: Dict):
     import importlib
 
     # TODO: validate func path.

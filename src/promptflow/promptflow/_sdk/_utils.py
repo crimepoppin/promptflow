@@ -32,7 +32,7 @@ from ruamel.yaml import YAML
 import promptflow
 from promptflow._constants import EXTENSION_UA
 from promptflow._core.tool_meta_generator import generate_tool_meta_dict_by_file
-from promptflow._core.tools_manager import get_dynamic_list
+from promptflow._core.tools_manager import gen_dynamic_list
 from promptflow._sdk._constants import (
     DAG_FILE_NAME,
     DEFAULT_ENCODING,
@@ -626,9 +626,9 @@ def _generate_tool_meta(
     return res
 
 
-def _get_dynamic_list(function_config: Dict) -> List:
-    func_path = function_config.get("func_path", type=str)
-    func_kwargs = function_config.get("func_kwargs", type=dict)
+def _gen_dynamic_list(function_config) -> List:
+    func_path = function_config.get("func_path", "")
+    func_kwargs = function_config.get("func_kwargs", {})
     # parameter
     # retrieve ws triple, system append to func_kwargs.
     # Question: inappropriate to ref cli internal method in  sdk?
@@ -638,10 +638,12 @@ def _get_dynamic_list(function_config: Dict) -> List:
     # TODO: what if user do not have ws triple in local? for example, do not az login and set ws triple.
     # system can append ws triple, which is enough for control plane api.
     # data plane api is not supported because it may require extra info in private link/vnet.
-    func_kwargs["subscription_id"] = workspace_triad.subscription_id
-    func_kwargs["resource_group"] = workspace_triad.resource_group_name
-    func_kwargs["workspace_name"] = workspace_triad.workspace_name
-    return get_dynamic_list(func_path, func_kwargs)
+    if workspace_triad.resource_group_name:
+        func_kwargs["subscription_id"] = workspace_triad.subscription_id
+        func_kwargs["resource_group"] = workspace_triad.resource_group_name
+        func_kwargs["workspace_name"] = workspace_triad.workspace_name
+
+    return gen_dynamic_list(func_path, func_kwargs)
 
 
 def _generate_package_tools(keys: Optional[List[str]] = None) -> dict:

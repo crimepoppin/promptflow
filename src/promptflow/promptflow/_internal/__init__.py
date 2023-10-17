@@ -40,7 +40,7 @@ from promptflow._core.tools_manager import (
     register_apis,
     register_builtins,
     register_connections,
-    get_dynamic_list,
+    gen_dynamic_list,
 )
 from promptflow._core.tracer import Tracer
 from promptflow._sdk._constants import LOCAL_MGMT_DB_PATH

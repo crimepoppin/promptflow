@@ -12,6 +12,7 @@ from promptflow._core.tools_manager import (
     collect_package_tools,
     collect_package_tools_and_connections,
     gen_tool_by_source,
+    gen_dynamic_list,
 )
 from promptflow.contracts.flow import Node, ToolSource, ToolSourceType
 from promptflow.contracts.tool import Tool, ToolType
@@ -205,3 +206,14 @@ class TestToolsManager:
         expected_template_str = textwrap.dedent(expected_template)
 
         assert content in expected_template_str
+
+    def test_dynamic_list(self):
+        func_path="my_tool_package.tools.tool_with_dynamic_list_input.dummy_list"
+        func_kwargs={"prefix": "My"}
+        result = gen_dynamic_list(func_path, func_kwargs)
+        assert len(result) == 10
+        from promptflow._sdk._utils import _gen_dynamic_list
+
+        _result = _gen_dynamic_list({
+            "func_path": func_path, "func_kwargs": func_kwargs})
+        print(_result)
