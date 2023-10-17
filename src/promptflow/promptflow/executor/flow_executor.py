@@ -787,10 +787,7 @@ class FlowExecutor:
         return updated_inputs
 
     def _process_images_from_inputs(
-        self,
-        inputs: Dict[str, FlowInputDefinition],
-        line_inputs: Mapping,
-        input_dir: Path = None
+        self, inputs: Dict[str, FlowInputDefinition], line_inputs: Mapping, input_dir: Path = None
     ) -> Dict[str, Any]:
         updated_inputs = dict(line_inputs or {})
         if not input_dir:
@@ -799,7 +796,7 @@ class FlowExecutor:
             input_dir = self._working_dir / input_dir
         for key, value in inputs.items():
             if value.type == ValueType.IMAGE:
-                updated_inputs[key] = Image.from_file(Path.joinpath(input_dir, updated_inputs[key]))
+                updated_inputs[key] = Image.from_file(Path(updated_inputs[key]["data:image/jpg;path"]))
         return updated_inputs
 
     def _persist_images_from_output(self, output: dict, output_dir: Path = None):
@@ -909,6 +906,11 @@ class FlowExecutor:
                 run_info.inputs = inputs
             output, nodes_outputs = self._traverse_nodes(inputs, context)
             output = self._stringify_generator_output(output) if not allow_generator_output else output
+            # Persist the node runs for the nodes that have a generator output
+            generator_output_nodes = [
+                nodename for nodename, output in nodes_outputs.items() if isinstance(output, GeneratorType)
+            ]
+            run_tracker.persist_selected_node_runs(run_info, generator_output_nodes)
             run_tracker.allow_generator_types = allow_generator_output
             run_tracker.end_run(line_run_id, result=output)
             aggregation_inputs = self._extract_aggregation_inputs(nodes_outputs)

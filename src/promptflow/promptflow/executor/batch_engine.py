@@ -21,26 +21,33 @@ class BatchEngine:
         output_dir: Path,
         run_id: str = None,
     ):
-        # 1. load data
-        input_dicts = self._resolve_data(input_dirs)
-        # 2. apply inputs mapping
-        mapped_inputs = self.flow_executor.validate_and_apply_inputs_mapping(input_dicts, inputs_mapping)
-        # 3. execute batch run
+        try:
+            input_dicts = self._resolve_data(input_dirs)
+            mapped_inputs = self.flow_executor.validate_and_apply_inputs_mapping(input_dicts, inputs_mapping)
+        except Exception as e:
+            # If an exception occurs before executing batch run, it must be thrown first.
+            raise e
+
         batch_result = self.flow_executor.exec_bulk(mapped_inputs, run_id)
-        # 4. save output
         for output in batch_result.outputs:
             output = self.flow_executor._persist_images_from_output(output, output_dir)
-        return input_dicts, batch_result
+        return mapped_inputs, batch_result
 
     def _resolve_data(self, input_dirs: Dict[str, str]):
         result = {}
-        for input_key, local_file in input_dirs.items():
-            local_file = Path(local_file).resolve()
-            file_data = load_data(local_file)
+        for input_key, input_dir in input_dirs.items():
+            input_dir = self._resolve_input_dir(input_dir)
+            file_data = load_data(input_dir)
             for each_line in file_data:
-                self._resolve_image_path(local_file, each_line)
+                self._resolve_image_path(input_dir, each_line)
             result[input_key] = file_data
         return result
+
+    def _resolve_input_dir(self, input_dir: str):
+        input_path = Path(input_dir)
+        if not input_path.is_absolute():
+            input_path = self.flow_executor._working_dir / input_path
+        return input_path
 
     def _resolve_image_path(self, input_dir: Path, one_line_data: dict):
         for key, value in one_line_data.items():
