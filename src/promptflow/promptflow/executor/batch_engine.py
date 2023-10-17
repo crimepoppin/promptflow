@@ -21,17 +21,15 @@ class BatchEngine:
         output_dir: Path,
         run_id: str = None,
     ):
-        try:
-            input_dicts = self._resolve_data(input_dirs)
-            mapped_inputs = self.flow_executor.validate_and_apply_inputs_mapping(input_dicts, inputs_mapping)
-        except Exception as e:
-            # If an exception occurs before executing batch run, it must be thrown first.
-            raise e
-
-        batch_result = self.flow_executor.exec_bulk(mapped_inputs, run_id)
+        input_dicts = self.get_input_dicts(input_dirs, inputs_mapping)
+        batch_result = self.flow_executor.exec_bulk(input_dicts, run_id)
         for output in batch_result.outputs:
             output = self.flow_executor._persist_images_from_output(output, output_dir)
-        return mapped_inputs, batch_result
+        return batch_result
+
+    def get_input_dicts(self, input_dirs: Dict[str, str], inputs_mapping: Dict[str, str]):
+        input_dicts = self._resolve_data(input_dirs)
+        return self.flow_executor.validate_and_apply_inputs_mapping(input_dicts, inputs_mapping)
 
     def _resolve_data(self, input_dirs: Dict[str, str]):
         result = {}
@@ -53,14 +51,14 @@ class BatchEngine:
         for key, value in one_line_data.items():
             if isinstance(value, list):
                 for each_item in value:
-                    each_item = self._resolve_image(input_dir, each_item)
+                    each_item = BatchEngine.resolve_image(input_dir, each_item)
                 one_line_data[key] = value
             elif isinstance(value, dict):
-                one_line_data[key] = self._resolve_image(input_dir, value)
+                one_line_data[key] = BatchEngine.resolve_image(input_dir, value)
         return one_line_data
 
-    def _resolve_image(self, input_dir: Path, data_dict: dict):
-        # input_absolute_dir = os.path.abspath(input_dir)
+    @staticmethod
+    def resolve_image(input_dir: Path, data_dict: dict):
         """
         if PFBytes.is_multimedia_data(data_dict):
             for key in data_dict:

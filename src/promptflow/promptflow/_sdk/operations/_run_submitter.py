@@ -290,17 +290,17 @@ class RunSubmitter:
         # prepare data
         input_dirs = self._resolve_input_dirs(run)
         self._validate_column_mapping(column_mapping)
-        mapped_inputs = None
+        mapped_inputs = batch_engine.get_input_dicts(input_dirs, column_mapping)
         bulk_result = None
         status = Status.Failed.value
         exception = None
         # create run to db when fully prepared to run in executor, otherwise won't create it
         run._dump()  # pylint: disable=protected-access
         try:
-            mapped_inputs, bulk_result = batch_engine.run(
+            bulk_result = batch_engine.run(
                 input_dirs=input_dirs,
                 inputs_mapping=column_mapping,
-                output_dir=local_storage.multimedia_path,
+                output_dir=local_storage.outputs_folder,
                 run_id=run_id,
             )
             # Filter the failed line result
@@ -325,9 +325,6 @@ class RunSubmitter:
             # for user error, swallow stack trace and return failed run since user don't need the stack trace
             if not isinstance(e, UserErrorException):
                 # for other errors, raise it to user to help debug root cause.
-                raise e
-            # raise exception if run failed before execution.
-            if bulk_result is None:
                 raise e
             # won't raise the exception since it's already included in run object.
         finally:
