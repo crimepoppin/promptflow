@@ -147,9 +147,11 @@ class Image(PFBytes):
             )
 
     @staticmethod
-    def _from_dict(image_dict: dict):
+    def _from_dict(image_dict: dict, base_dir: Path = None):
         for k, v in image_dict.items():
             format, resource = Image._get_multimedia_info(k)
+            if base_dir is not None:
+                v = Path.joinpath(base_dir, v)
             if resource == "path":
                 return Image._from_file(v, mime_type=f"image/{format}")
             elif resource == "base64":

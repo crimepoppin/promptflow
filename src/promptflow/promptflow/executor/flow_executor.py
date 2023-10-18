@@ -243,6 +243,7 @@ class FlowExecutor:
         flow_file: Path,
         node_name: str,
         *,
+        storage: Optional[AbstractRunStorage] = None,
         flow_inputs: Optional[Mapping[str, Any]] = None,
         dependency_nodes_outputs: Optional[Mapping[str, Any]] = None,
         connections: Optional[dict] = None,
@@ -295,8 +296,10 @@ class FlowExecutor:
                 flow_file=flow_file,
             )
 
-        flow_inputs = FlowExecutor._apply_default_value_for_input(flow.inputs, flow_inputs)
-        converted_flow_inputs_for_node = FlowValidator.convert_flow_inputs_for_node(flow, node, flow_inputs)
+        inputs_with_default_value = FlowExecutor._apply_default_value_for_input(flow.inputs, flow_inputs)
+        inputs = FlowExecutor._process_images_from_inputs(flow.inputs, inputs_with_default_value, working_dir)
+        FlowExecutor._process_images_in_dependency_nodes_outputs(dependency_nodes_outputs, working_dir)
+        converted_flow_inputs_for_node = FlowValidator.convert_flow_inputs_for_node(flow, node, inputs)
         package_tool_keys = [node.source.tool] if node.source and node.source.tool else []
         tool_resolver = ToolResolver(working_dir, connections, package_tool_keys)
         resolved_node = tool_resolver.resolve_tool_by_node(node)
@@ -321,7 +324,10 @@ class FlowExecutor:
         resolved_inputs = {k: v for k, v in resolved_inputs.items() if k not in resolved_node.init_args}
 
         # TODO: Simplify the logic here
-        run_tracker = RunTracker(DummyRunStorage())
+        if storage is None:
+            run_tracker = RunTracker(DummyRunStorage())
+        else:
+            run_tracker = RunTracker(storage)
         with run_tracker.node_log_manager:
             ToolInvoker.activate(DefaultToolInvoker())
 
@@ -697,7 +703,10 @@ class FlowExecutor:
         """
         self._node_concurrency = node_concurrency
         inputs_with_default_value = FlowExecutor._apply_default_value_for_input(self._flow.inputs, inputs)
-        inputs = self._process_images_from_inputs(self._flow.inputs, inputs_with_default_value)
+        inputs = FlowExecutor._process_images_from_inputs(
+            self._flow.inputs,
+            inputs_with_default_value,
+            self._working_dir)
         # For flow run, validate inputs as default
         with self._run_tracker.node_log_manager:
             # exec_line interface may be called by exec_bulk, so we only set run_mode as flow run when
@@ -785,29 +794,37 @@ class FlowExecutor:
                 updated_inputs[key] = value.default
         return updated_inputs
 
+    @staticmethod
     def _process_images_from_inputs(
-        self,
         inputs: Dict[str, FlowInputDefinition],
         line_inputs: Mapping,
+        working_dir,
     ) -> Dict[str, Any]:
         updated_inputs = dict(line_inputs or {})
         for key, value in inputs.items():
             if value.type == ValueType.IMAGE:
-                updated_inputs[key] = Image._create(updated_inputs[key], self._working_dir)
+                updated_inputs[key] = Image._create(updated_inputs[key], working_dir)
             elif value.type == ValueType.LIST:
-                updated_inputs[key] = self._process_images_in_input_list(updated_inputs[key])
+                updated_inputs[key] = FlowExecutor._process_images_in_input_list(updated_inputs[key])
         return updated_inputs
 
-    def _process_images_in_input_list(self, value):
+    @staticmethod
+    def _process_images_in_input_list(value, base_dir: Path = None):
         if isinstance(value, list):
-            return [self._process_images_in_input_list(item) for item in value]
+            return [FlowExecutor._process_images_in_input_list(item) for item in value]
         elif isinstance(value, dict):
             if PFBytes._is_multimedia_dict(value):
-                return Image._from_dict(value)
+                return Image._from_dict(value, base_dir)
             else:
-                return {k: self._process_images_in_input_list(v) for k, v in value.items()}
+                return {k: FlowExecutor._process_images_in_input_list(v) for k, v in value.items()}
         else:
             return value
+
+    @staticmethod
+    def _process_images_in_dependency_nodes_outputs(node_outputs: Optional[Mapping[str, Any]] = None,
+                                                    base_dir: Path = None):
+        for key, value in node_outputs.items():
+            node_outputs[key] = FlowExecutor._process_images_in_input_list(value, base_dir)
 
     @staticmethod
     def _persist_images_from_output(output: dict, base_dir: Path, sub_dir: Path = None):
