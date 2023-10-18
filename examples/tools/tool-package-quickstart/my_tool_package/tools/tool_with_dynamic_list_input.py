@@ -2,13 +2,13 @@ from promptflow import tool
 from typing import List, Union, Dict
 
 
-def dummy_list(prefix: str, **kwargs) -> List[Dict[str, Union[str, int, float, list, Dict]]]:
+def dummy_list(prefix: str = "", size: int = 10, **kwargs) -> List[Dict[str, Union[str, int, float, list, Dict]]]:
     # dummy random.
     import random
 
     words = ["apple", "banana", "cherry", "date", "elderberry", "fig", "grape", "honeydew", "kiwi", "lemon"]
     result = []
-    for i in range(10):
+    for i in range(size):
         random_word = random.choice(words)
         cur_item = {
             # for backend use.

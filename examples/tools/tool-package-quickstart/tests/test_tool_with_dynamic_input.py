@@ -10,3 +10,5 @@ def test_dummy_list():
     result = dummy_list(prefix="My")
     assert len(result) == 10
     assert "value" in result[0]
+    result = dummy_list()
+    print(result)
