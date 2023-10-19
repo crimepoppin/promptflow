@@ -9,7 +9,7 @@ def dummy_list(prefix: str = "", size: int = 10, **kwargs) -> List[Dict[str, Uni
     words = ["apple", "banana", "cherry", "date", "elderberry", "fig", "grape", "honeydew", "kiwi", "lemon"]
     result = []
     for i in range(size):
-        random_word = random.choice(words)
+        random_word = f"{random.choice(words)}{i}"
         cur_item = {
             # for backend use.
             "value": random_word,
