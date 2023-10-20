@@ -1,7 +1,7 @@
 import pytest
 import unittest
 
-from my_tool_package.tools.my_tool_with_custom_strong_type_connection import MyCustomConnection, my_tool
+from my_tool_package.tools.tool_with_custom_strong_type_connection import MyCustomConnection, my_tool
 
 
 @pytest.fixture

@@ -1,4 +1,4 @@
-my_tool_package.tools.my_tool_with_custom_strong_type_connection.my_tool:
+my_tool_package.tools.tool_with_custom_strong_type_connection.my_tool:
   function: my_tool
   inputs:
     connection:
@@ -9,7 +9,7 @@ my_tool_package.tools.my_tool_with_custom_strong_type_connection.my_tool:
     input_param:
       type:
       - string
-  module: my_tool_package.tools.my_tool_with_custom_strong_type_connection
+  module: my_tool_package.tools.tool_with_custom_strong_type_connection
   name: Tool With Custom Strong Type Connection
   description: This is my tool with custom strong type connection.
   type: python
