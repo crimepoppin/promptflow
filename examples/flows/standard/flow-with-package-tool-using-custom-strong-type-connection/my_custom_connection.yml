@@ -1,4 +1,4 @@
-name: "to_replace_with_connection_name"
+name: "my_custom_connection"
 type: custom
 custom_type: MyCustomConnection
 module: my_tool_package.tools.my_tool_with_custom_strong_type_connection
